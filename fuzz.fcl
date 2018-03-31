@@ -1,0 +1,49 @@
+FUNCTION_BLOCK fuzz
+
+	VAR_INPUT
+		Headline:	REAL;
+		MLP:	REAL;
+	END_VAR
+
+	VAR_OUTPUT
+		StockChange:	REAL;
+	END_VAR
+
+	FUZZYIFY Headline
+		TERM Negative :=(-3,-2) (-2,-1) (-1,0)	;
+		TERM Neutral :=(-0.5,0) (0,1) (1,1.5)	;
+		TERM Positive :=(0.5,1) (1,2) (2,3)	;
+	END_FUZZYIFY
+
+	FUZZYIFY MLP
+		TERM Bear :=(-3,-2) (-2,-1) (-1,0)	;
+		TERM Same :=(-0.5,0) (0,1) (1,1.5)	;
+		TERM Bull :=(0.5,1) (1,2) (2,3)	;
+	END_FUZZYIFY	
+
+	DEFUZZIFY StockChange
+		TERM StockDrop := 1	;
+		TERM StockSame := 2	;
+		TERM StockRise := 3	;
+		ACCU: MAX;
+		METHOD:	COGS;
+		DEFAULT := 0	;
+	END_DEFUZZIFY
+
+	RULEBLOCK first
+		AND: MIN;
+
+		RULE 0: IF (Headline IS Negative) AND (MLP IS Bear) THEN (StockChange IS StockDrop);
+		RULE 1: IF (Headline IS Negative) AND (MLP IS Same) THEN (StockChange IS StockSame);
+		RULE 2: IF (Headline IS Negative) AND (MLP IS Bull) THEN (StockChange IS StockSame);
+		RULE 3: IF (Headline IS Neutral) AND (MLP IS Bear) THEN (StockChange IS StockDrop);
+		RULE 4: IF (Headline IS Neutral) AND (MLP IS Same) THEN (StockChange IS StockSame);
+		RULE 5: IF (Headline IS Neutral) AND (MLP IS Bull) THEN (StockChange IS StockRise);
+		RULE 6: IF (Headline IS Positive) AND (MLP IS Bear) THEN (StockChange IS StockSame);
+		RULE 7: IF (Headline IS Positive) AND (MLP IS Same) THEN (StockChange IS StockRise);
+		RULE 8: IF (Headline IS Positive) AND (MLP IS Bull) THEN (StockChange IS StockRise);
+	END_RULEBLOCK
+END_FUNCTION_BLOCK
+
+
+
