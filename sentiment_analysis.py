@@ -4,6 +4,7 @@ from watson_developer_cloud.natural_language_understanding_v1 import Features, E
 import MySQLdb
 import pandas as pd
 import re
+from math import exp
 nlu = NaturalLanguageUnderstandingV1(
   username='fb46fb33-3a6b-4ab1-abd3-1d564faee2e7',
   password='X2wDsDxGoBlm',
@@ -31,7 +32,17 @@ def preproc(body):
     body=body[:idx2]+"."
     return body
 
-def get_data():
+def get_agg(scores):
+	agg_scores=[]
+	for packet in scores:
+		agg_scores.append((packet["title-score"]*2 + packet["body-score"])/2)
+	# print agg_scores
+	if(len(agg_scores)==0):
+		return None
+	return sum(agg_scores)/len(agg_scores)
+
+def get_score(date):
+	# print date
 	db = MySQLdb.connect(host="ece457project.chwjf5irbz2p.us-east-2.rds.amazonaws.com",    
 	                     user="aiproject2018",         
 	                     passwd="aiproject2018",  
@@ -39,8 +50,8 @@ def get_data():
 
 	cur=db.cursor()
 	cur.execute("use bitcoinproject;")
-	dt="2018-03-30"
-	cur.execute("SELECT * FROM coindesk_articles WHERE date = %s",(dt,))
+	# dt="2018-03-30"
+	cur.execute("SELECT * FROM coindesk_articles WHERE date = %s",(date,))
 	a=cur.fetchall()
 
 	table={
@@ -68,7 +79,7 @@ def get_data():
 				)
 		except Exception as e:
 			print("Keyword not found")
-	print scores
+	return (get_agg(scores))
 
-get_data()
+# get_data()
 		
