@@ -5,6 +5,8 @@ import re
 from datetime import datetime,timedelta
 from math import tanh
 from numpy import random
+from MLP import predict
+
 dt=datetime(2017,11,17)
 
 class FeatureEngine(object):
@@ -14,6 +16,14 @@ class FeatureEngine(object):
 	                     user="aiproject2018",         
 	                     passwd="aiproject2018",  
 	                     db="bitcoinproject")
+
+	def get_prices(self,date):
+		
+		data=pd.read_csv('bitcoindata.csv',names=['date','price'])
+		time=str(date)[:-3]
+		idx=data[data["date"]==time].index[0]
+		prices=data.iloc[idx-256:idx]["price"]
+		return list(prices)
 
 	def get_dates(self):
 		cur=self.db.cursor()
@@ -28,10 +38,16 @@ class FeatureEngine(object):
 			return None
 		grads=self.get_gradient(date)
 
+		mlp_pred=predict(self.get_prices(date))
+		print(mlp_pred)
+
 		features={
+		"date":date,
 		"sent_score":sent_score,
 		"gradient":grads[0],
+		"mlp_pred":mlp_pred,
 		"next_grad":grads[1]
+
 		}
 
 		return features
@@ -85,6 +101,9 @@ def fuzzify_res(inp):
 	else:
 		return "NTR"
 
+def fuzzify_MLP(inp):
+	pass
+
 def fuzzify(inp):
 	if inp>=-0.2 and inp<=0.2:
 		return "NTR"
@@ -102,32 +121,43 @@ def fuzzify(inp):
 		return "VN"
 
 def classify(packet,results):
-
+	results["date"].append(packet["date"])
 	results["G"].append(float(packet["gradient"]))
 	results["SA"].append(float(packet["sent_score"]))
+	results["MLP"].append(float(packet["mlp_pred"]))
 	results["RES"].append(fuzzify_res(packet["next_grad"]))
 
-	print results["G"][-1],results["SA"][-1],results["RES"][-1]
+	print (results["G"][-1],results["SA"][-1],results["RES"][-1],results["MLP"][-1])
+
+def get_current_data():
+	df=pd.read_csv("fuzzified2.csv")
+	data=dict(df)
+	return data
 
 def main():
 	results={
 	"G":[],
 	"SA":[],
 	"RES":[],
+	"MLP":[],
+	"date":[]
 	}
 	FE=FeatureEngine()
 	d=FE.get_dates()
 	dates=d[100:len(d)-8]
 	# print dates[0],len(dates)
+	
 	for i in range(500):
+		#Generate random date to add to dataset
 		date=dates[random.randint(len(dates))]
 		feats=FE.generate_all(date)
 		if not feats:
 			continue
 		classify(feats,results)
 	df=pd.DataFrame(results)
-	df.to_csv('fuzzified3.csv')
+	df.to_csv('fuzzified4.csv')
 	print(df)
+
 
 if __name__ == '__main__':
 	main()
